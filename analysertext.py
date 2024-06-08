@@ -1,4 +1,6 @@
 import nltk
+import json
+import pandas as pd
 from typing import List, Dict, Any
 from loadfile import WordsTranscription, Transcript, Results, Item, Alternative
 
@@ -32,6 +34,47 @@ def analyze_transcription(words_transcription: WordsTranscription) -> WordsTrans
         status=words_transcription.status,
         results=new_results
     )
+# Função para calcular a média dos valores de "pronunciation"
+def calculate_average_pronunciation(words_transcription: WordsTranscription) -> WordsTranscription:
+    pronunciation_values = []
+    for item in words_transcription.results.items:
+        for alternative in item.alternatives:
+            if hasattr(alternative, 'confidence'):
+                pronunciation_values.append(float(alternative.confidence))
+    
+    average_pronunciation = sum(pronunciation_values) / len(pronunciation_values) if pronunciation_values else 0.0
+    
+    # Adicionando a média de "pronunciation" aos resultados
+    words_transcription.results.average_pronunciation = average_pronunciation
+    
+    return words_transcription
+
+# Função para transformar results.items em um DataFrame
+def items_to_dataframe(words_transcription: WordsTranscription) -> pd.DataFrame:
+    data = []
+    for item in words_transcription.results.items:
+        for alternative in item.alternatives:
+            data.append({
+                'type': item.type,
+                'start_time': float(item.start_time) if item.start_time else None,
+                'end_time': float(item.end_time) if item.end_time else None,
+                'confidence': float(alternative.confidence),
+                'content': alternative.content,
+                'discard': alternative.discard
+            })
+    return pd.DataFrame(data)
+
+# Função para marcar itens do results.items com base no conteúdo do array
+def mark_items_to_discard(words_transcription: WordsTranscription, words_to_mark: List[str]) -> WordsTranscription:
+    for item in words_transcription.results.items:
+        for alternative in item.alternatives:
+            if any(word in alternative.content for word in words_to_mark):
+                alternative.discard = True
+            else:
+                alternative.discard = False
+    return words_transcription
+
+
 
 # Exemplo de uso
 if __name__ == "__main__":
