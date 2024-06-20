@@ -1,6 +1,7 @@
 import nltk
 import json
 import pandas as pd
+import language_tool_python
 from typing import List, Dict, Any
 from loadfile import WordsTranscription, Transcript, Results, Item, Alternative
 
@@ -49,6 +50,14 @@ def calculate_average_pronunciation(words_transcription: WordsTranscription) -> 
     
     return words_transcription
 
+
+# Função para converter segundos em minutos e segundos
+def convert_to_min_sec(seconds: float) -> str:
+    minutes = int(seconds // 60)
+    remaining_seconds = seconds % 60
+    return f"{minutes}m {remaining_seconds:.2f}s"
+
+
 # Função para transformar results.items em um DataFrame
 def items_to_dataframe(words_transcription: WordsTranscription) -> pd.DataFrame:
     data = []
@@ -56,8 +65,8 @@ def items_to_dataframe(words_transcription: WordsTranscription) -> pd.DataFrame:
         for alternative in item.alternatives:
             data.append({
                 'type': item.type,
-                'start_time': float(item.start_time) if item.start_time else None,
-                'end_time': float(item.end_time) if item.end_time else None,
+                'start_time': convert_to_min_sec(float(item.start_time)) if item.start_time else None,
+                'end_time': convert_to_min_sec(float(item.end_time)) if item.end_time else None,
                 'confidence': float(alternative.confidence),
                 'content': alternative.content,
                 'discard': alternative.discard
@@ -73,9 +82,21 @@ def mark_items_to_discard(words_transcription: WordsTranscription, words_to_mark
             else:
                 alternative.discard = False
     return words_transcription
+# Função para verificar erros gramaticais e de concordância
+def check_grammar_and_agreement_errors(transcripts: List[Transcript]) -> List[Dict[str, Any]]:
+    tool = language_tool_python.LanguageTool('en-US')
+    errors = []
 
-
-
+    for transcript in transcripts:
+        matches = tool.check(transcript.transcript)
+        for match in matches:
+            error_sentence = transcript.transcript[match.offset: match.offset + match.errorLength]
+            errors.append({
+                'sentence': error_sentence,
+                'error': match.message,
+                'correction': match.replacements
+            })
+    
 # Exemplo de uso
 if __name__ == "__main__":
     from loadfile import load_words_transcription_from_file

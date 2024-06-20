@@ -51,6 +51,56 @@ def phrasal_verbs_analysis_to_dataframe(analysis: Dict[str, Any]) -> pd.DataFram
     df = df.groupby("Phrasal Verb").sum().reset_index()
     return df
 
+def mark_phrasal_verbs_in_dataframe(phrasal_verbs_df: pd.DataFrame, items_df: pd.DataFrame) -> pd.DataFrame:
+    # Adiciona a coluna 'PhrasalVerb' inicializada com False
+    items_df['PhrasalVerb'] = False
+    
+    new_rows = []
+    
+    # Itera sobre cada phrasal verb
+    for phrasal_verb in phrasal_verbs_df['Phrasal Verb']:
+        words = phrasal_verb.split()
+        if len(words) < 2:
+            continue
+        
+        # Itera sobre o DataFrame para encontrar combinações de phrasal verbs
+        for i in range(len(items_df) - 1):
+            current_word = items_df.iloc[i]
+            next_word = items_df.iloc[i + 1]
+            
+            # Verifica se as palavras concatenadas formam o phrasal verb
+            if current_word['content'] == words[0] and next_word['content'] == words[1]:
+                items_df.at[i, 'PhrasalVerb'] = True
+                items_df.at[i + 1, 'PhrasalVerb'] = True
+                
+                # Concatenar as palavras e ajustar os campos
+                combined_row = {
+                    'type': 'verb',
+                    'start_time': min(current_word['start_time'], next_word['start_time']),
+                    'end_time': max(current_word['end_time'], next_word['end_time']),
+                    'confidence': (current_word['confidence'] + next_word['confidence']) / 2,
+                    'content': phrasal_verb,
+                    'discard': current_word['discard'] or next_word['discard'],
+                    'PhrasalVerb': True
+                }
+                
+                # Adicionar a nova linha à lista de novas linhas
+                new_rows.append(combined_row)
+                
+                # Marcar as linhas originais como descartadas
+                items_df.at[i, 'discard'] = True
+                items_df.at[i + 1, 'discard'] = True
+
+    # Criar DataFrame das novas linhas e concatenar com o DataFrame original
+    new_rows_df = pd.DataFrame(new_rows)
+    items_df = pd.concat([items_df, new_rows_df], ignore_index=True)
+    
+    # Filtrar linhas onde 'discard' é False
+    items_df = items_df[items_df['discard'] == False]
+    
+    return items_df
+
+
 # Exemplo de uso
 if __name__ == "__main__":
     from loadfile import load_words_transcription_from_file
