@@ -17,6 +17,21 @@ def read_csv_to_array(file_name: str) -> list:
     
     return data_array
 
+
+def save_results_to_csv(file_name: str, words_items_df: pd.DataFrame, unique_contents: int, unique_phrasalverbs: int, average_confidence: float, ):
+    # Salvar o DataFrame principal
+    words_items_df.to_csv(f'{file_name}_words_items.csv', index=False)
+    
+    # Salvar as métricas em um DataFrame separado
+    metrics_df = pd.DataFrame({
+        'Metric': ['Unique Contents', 'Unique Phrasal Verbs', 'Average Confidence'],
+        'Value': [unique_contents, unique_phrasalverbs, average_confidence]
+    })
+    metrics_df.to_csv(f'{file_name}_metrics.csv', index=False)
+    
+    # Salvar os erros gramaticais em um DataFrame separado
+    # grammar_errors_df = pd.DataFrame(grammar_errors)
+    # grammar_errors_df.to_csv(f'{file_name}_grammar_errors.csv', index=False)
 # Exemplo de uso
 if __name__ == "__main__":
     try:

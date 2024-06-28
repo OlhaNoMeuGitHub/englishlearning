@@ -1,7 +1,7 @@
 from loadfile import load_words_transcription_from_file
 from analysertext import analyze_transcription,items_to_dataframe,mark_items_to_discard,check_grammar_and_agreement_errors
 from analyserPhrasalVerbs import analyze_phrasal_verbs,phrasal_verbs_analysis_to_dataframe,mark_phrasal_verbs_in_dataframe
-from service import read_csv_to_array
+from service import read_csv_to_array,save_results_to_csv
 
 
 # Exemplo de uso da função read_csv_to_array
@@ -37,15 +37,13 @@ try:
     average_confidence = words_items_df[words_items_df['discard'] == False]['confidence'].mean()
       # Verificar erros gramaticais e de concordância
     grammar_errors = check_grammar_and_agreement_errors(words_transcription.results.transcripts)
-    print(grammar_errors)
     print(words_items_df[words_items_df['PhrasalVerb'] == True])
     # print(words_items_df)
     print(unique_contents)
     print(unique_phrasalverbs)
     print(average_confidence)
-
-    #mostre apenas onde o dataframe tem o campo PhrasalVerb igual a True
-
+    save_results_to_csv('transcription_analysis', words_items_df, unique_contents, unique_phrasalverbs, average_confidence)
+    
 except Exception as e:
     print(f"Erro : {e}")
 
